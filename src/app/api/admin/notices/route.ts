@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
+import { sendEmail } from "@/lib/email";
 
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
@@ -21,7 +22,20 @@ export async function POST(req: Request) {
     });
 
     if (notice.isImportant) {
-      // TODO: Send broadcast email to all residents
+      // Broadcast email to all residents
+      const residents = await prisma.user.findMany({ where: { role: 'resident' } });
+      for (const resident of residents) {
+        await sendEmail({
+          to: resident.email,
+          subject: `IMPORTANT NOTICE: ${notice.title}`,
+          body: `
+            <h3>Hi ${resident.name},</h3>
+            <p>An important notice has been posted by the administration:</p>
+            <hr />
+            <p style="white-space: pre-wrap;">${notice.body}</p>
+          `
+        });
+      }
     }
 
     return NextResponse.json(notice, { status: 201 });

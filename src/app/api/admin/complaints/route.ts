@@ -13,10 +13,22 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const category = searchParams.get("category");
     const status = searchParams.get("status");
+    const from = searchParams.get("from");
+    const to = searchParams.get("to");
 
     let where: any = {};
     if (category) where.category = category;
     if (status) where.status = status;
+    
+    if (from || to) {
+      where.createdAt = {};
+      if (from) where.createdAt.gte = new Date(from);
+      if (to) {
+        const toDate = new Date(to);
+        toDate.setHours(23, 59, 59, 999);
+        where.createdAt.lte = toDate;
+      }
+    }
 
     const complaints = await prisma.complaint.findMany({
       where,

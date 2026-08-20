@@ -8,22 +8,43 @@ export default function NewComplaintPage() {
   const { data: session } = useSession();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [file, setFile] = useState<File | null>(null);
   const [formData, setFormData] = useState({
     category: "Plumbing",
     location: "",
     description: "",
-    photoUrl: "", // Mock URL for now unless we implement real upload
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+
+    let photoUrl = "";
+
+    // Upload photo to Cloudinary if one is selected
+    if (file) {
+      const fileData = new FormData();
+      fileData.append("file", file);
+      
+      const uploadRes = await fetch("/api/upload", { 
+        method: "POST", 
+        body: fileData 
+      });
+      
+      if (uploadRes.ok) {
+        const { url } = await uploadRes.json();
+        photoUrl = url;
+      } else {
+        alert("Warning: Failed to upload image. Submitting complaint without it.");
+      }
+    }
+
     const locationToSend = formData.location || session?.user?.flatNumber || "Unknown";
 
     const res = await fetch("/api/complaints", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...formData, location: locationToSend }),
+      body: JSON.stringify({ ...formData, location: locationToSend, photoUrl }),
     });
 
     if (res.ok) {
@@ -74,7 +95,15 @@ export default function NewComplaintPage() {
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
             />
           </div>
-          {/* Note: Photo upload would go here. We skip the real integration to keep the code fully functional locally without API keys. */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Attach a Photo (Optional)</label>
+            <input
+              type="file"
+              accept="image/*"
+              className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-primary hover:file:bg-blue-100"
+              onChange={(e) => setFile(e.target.files?.[0] || null)}
+            />
+          </div>
           <div>
             <button
               type="submit"

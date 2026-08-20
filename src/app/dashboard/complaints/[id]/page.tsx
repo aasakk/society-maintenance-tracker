@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { formatDate } from "@/lib/utils";
+import Image from "next/image";
 
 type ComplaintDetail = {
   id: string;
@@ -9,6 +10,7 @@ type ComplaintDetail = {
   description: string;
   location: string;
   status: string;
+  photoUrl: string | null;
   createdAt: string;
   history: {
     id: string;
@@ -55,7 +57,21 @@ export default function ComplaintDetailPage({ params }: { params: { id: string }
           </div>
         </div>
         <div className="border-t border-gray-200 px-4 py-5 sm:px-6">
-          <p className="text-sm text-gray-900">{complaint.description}</p>
+          <p className="text-sm text-gray-900 whitespace-pre-wrap">{complaint.description}</p>
+          
+          {complaint.photoUrl && (
+            <div className="mt-4">
+              <p className="text-sm font-medium text-gray-500 mb-2">Attached Photo:</p>
+              <div className="relative w-full max-w-md h-64 border rounded-md overflow-hidden">
+                <Image 
+                  src={complaint.photoUrl} 
+                  alt="Complaint evidence" 
+                  fill
+                  className="object-contain bg-gray-50"
+                />
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
