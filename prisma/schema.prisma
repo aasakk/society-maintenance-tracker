@@ -1,0 +1,70 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  passwordHash  String
+  role          String    @default("resident") // 'resident' or 'admin'
+  flatNumber    String?
+  createdAt     DateTime  @default(now())
+
+  complaints    Complaint[]
+  statusChanges ComplaintStatusHistory[]
+  notices       Notice[]
+}
+
+model Complaint {
+  id            String    @id @default(cuid())
+  residentId    String
+  resident      User      @relation(fields: [residentId], references: [id])
+  
+  category      String    // 'Plumbing', 'Electrical', 'Cleaning', 'Security', 'Lift', 'Other'
+  description   String
+  photoUrl      String?
+  priority      String    @default("Medium") // 'Low', 'Medium', 'High'
+  status        String    @default("Open") // 'Open', 'In Progress', 'Resolved'
+  isOverdue     Boolean   @default(false)
+  location      String
+  
+  createdAt     DateTime  @default(now())
+  resolvedAt    DateTime?
+
+  history       ComplaintStatusHistory[]
+}
+
+model ComplaintStatusHistory {
+  id              String    @id @default(cuid())
+  complaintId     String
+  complaint       Complaint @relation(fields: [complaintId], references: [id], onDelete: Cascade)
+  
+  oldStatus       String?
+  newStatus       String
+  changedByUserId String
+  changedByUser   User      @relation(fields: [changedByUserId], references: [id])
+  
+  note            String?
+  createdAt       DateTime  @default(now())
+}
+
+model Notice {
+  id            String    @id @default(cuid())
+  title         String
+  body          String
+  isImportant   Boolean   @default(false)
+  postedByUserId String
+  postedByUser  User      @relation(fields: [postedByUserId], references: [id])
+  createdAt     DateTime  @default(now())
+}
+
+model Config {
+  id                   String @id @default("global")
+  overdueThresholdDays Int    @default(3)
+}
